@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jogo da Velha Avançado</title>
+<style>
+/* ===== VARIÁVEIS GLOBAIS DE CORES E TEMAS ===== */
+:root {
+  --bg-dark: linear-gradient(180deg, #0f172a 0%, #0b1220 100%);
+  --bg-light: linear-gradient(180deg, #ffffff 0%, #e0e0e0 100%);
+  --text-dark: #e6eef8;
+  --text-light: #1f1f1f;
+  --cell-bg-dark: rgba(255,255,255,0.02);
+  --cell-bg-light: rgba(0,0,0,0.04);
+  --x-color: #ffd166;
+  --o-color: #7dd3fc;
+  --highlight-color: rgba(255,255,0,0.3);
+  --button-bg: rgba(255,255,255,0.08);
+  --button-hover-bg: rgba(255,255,255,0.15);
+  --button-text: #e6eef8;
+  --button-border: rgba(255,255,255,0.1);
+}
+
+/* ===== RESET BÁSICO ===== */
+* { box-sizing: border-box; margin:0; padding:0; }
+
+/* ===== BODY ===== */
+body {
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+body.dark { background: var(--bg-dark); color: var(--text-dark);}
+body.light { background: var(--bg-light); color: var(--text-light);}
+
+/* ===== CONTAINER PRINCIPAL ===== */
+.container {
+  width: 440px;
+  max-width: 98vw;
+  border-radius: 18px;
+  padding: 16px 12px 12px 12px;
+  box-shadow: 0 8px 32px rgba(2,6,23,0.45);
+  background: rgba(255,255,255,0.07);
+  transition: background .3s ease;
+  margin: 0 auto;
+  backdrop-filter: blur(2px);
+  position: relative;
+}
+
+/* ===== BOTÕES DE TOPO ===== */
+.top-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.top-actions button {
+  background: none;
+  border: none;
+  font-size: 1.7rem;
+  cursor: pointer;
+  color: #ffe066;
+  padding: 4px 8px;
+  border-radius: 50%;
+  transition: background .18s;
+}
+.top-actions button:hover {
+  background: rgba(255,255,255,0.13);
+}
+body.light .top-actions button { color: #1e293b; }
+
+/* ===== HEADER: PLACAR E CONTROLES ===== */
+header {
+  margin-bottom: 4px;
+}
+.scoreboard {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  font-weight: 700;
+  font-size: 0.98rem;
+  margin-bottom: 4px;
+  color: #ffe066;
+  text-shadow: 0 1px 4px #0008;
+  justify-content: center;
+}
+body.light .scoreboard {
+  color: #1e293b;
+  text-shadow: none;
+}
+
+/* ===== BOTÕES DE AÇÃO ===== */
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.controls button {
+  background: linear-gradient(90deg, #334155 0%, #1e293b 100%);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 700;
+  color: #ffe066;
+  font-size: 0.98rem;
+  margin-right: 0;
+  margin-bottom: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  transition: background .2s, color .2s, transform .13s, box-shadow .18s;
+  outline: none;
+}
+.controls button:hover, .controls button:focus {
+  background: linear-gradient(90deg, #fbbf24 0%, #f59e42 100%);
+  color: #1e293b;
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 6px 18px rgba(251,191,36,0.18);
+}
+body.light .controls button {
+  background: linear-gradient(90deg, #ffe066 0%, #fbbf24 100%);
+  color: #1e293b;
+  box-shadow: 0 2px 8px rgba(251,191,36,0.10);
+}
+body.light .controls button:hover, 
+body.light .controls button:focus {
+  background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(37,99,235,0.13);
+}
+
+/* ===== TABULEIRO ===== */
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 0;
+  margin-bottom: 10px;
+  width: 380px;
+  height: 380px;
+  max-width: 96vw;
+  max-height: 96vw;
+  margin-left: auto;
+  margin-right: auto;
+  background: rgba(255,255,255,0.03);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+}
+
+.cell {
+  border-radius: 14px;
+  aspect-ratio: 1/1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.2rem;
+  font-weight: 900;
+  user-select: none;
+  cursor: pointer;
+  transition: transform .08s, background .12s, box-shadow .18s;
+  background: var(--cell-bg-dark);
+  color: var(--text-dark);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+.cell:hover {
+  transform: scale(1.06);
+  background: var(--button-hover-bg);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+.cell.x { color: var(--x-color);}
+.cell.o { color: var(--o-color);}
+body.light .cell.x { color: #eab308; }
+body.light .cell.o { color: #2563eb; }
+.highlight { background: var(--highlight-color); }
+
+/* ===== CORAÇÕES ===== */
+.hearts { display:flex; gap:2px; }
+.heart { color:#ff4d4f; font-size:20px; filter: drop-shadow(0 1px 2px #0004); }
+
+/* ===== FOOTER ===== */
+footer {
+  text-align:center;
+  font-weight:600;
+  padding:8px 0 0 0;
+  color: #ffe066;
+  text-shadow: 0 1px 4px #0008;
+}
+body.light footer { color: #1e293b; text-shadow: none; }
+
+/* ===== TELA INICIAL ===== */
+.overlay {
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(180deg, rgba(2,6,23,0.7), rgba(2,6,23,0.85));
+  z-index:999;
+  backdrop-filter: blur(2px);
+}
+.start-card {
+  background: rgba(255,255,255,0.09);
+  padding:32px 18px 24px 18px;
+  border-radius:18px;
+  text-align:center;
+  width:340px;
+  box-shadow: 0 8px 32px rgba(2,6,23,0.25);
+  transition: background .3s ease;
+}
+.start-card h1 { margin-bottom:18px; font-size:28px; color: #ffe066; text-shadow: 0 1px 4px #0008;}
+.start-card label { display:block; margin-bottom:12px; font-weight:600; color: #ffe066;}
+.start-card select, .start-card button {
+  width:100%;
+  padding:12px;
+  border-radius:14px;
+  font-size:18px;
+  margin-top:8px;
+  cursor:pointer;
+  border:none;
+  background: linear-gradient(90deg, #334155 0%, #1e293b 100%);
+  color: #ffe066;
+  font-weight:700;
+  transition: background .2s, color .2s, transform .13s, box-shadow .18s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+.start-card button:hover, .start-card select:hover {
+  background: linear-gradient(90deg, #fbbf24 0%, #f59e42 100%);
+  color: #1e293b;
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 6px 18px rgba(251,191,36,0.18);
+}
+
+/* ===== RESPONSIVO ===== */
+@media (max-width: 600px) {
+  .container {
+    width: 99vw;
+    padding: 2vw;
+    min-width: unset;
+    max-width: 100vw;
+  }
+  .board {
+    width: 96vw;
+    height: 96vw;
+    max-width: 96vw;
+    max-height: 96vw;
+    gap: 2vw;
+  }
+  .cell {
+    font-size: 9vw;
+    border-radius: 8px;
+  }
+  .start-card {
+    width: 98vw;
+    padding: 10px;
+  }
+  .controls button {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 8px;
+    font-size: 1rem;
+    padding: 10px 0;
+  }
+  .scoreboard {
+    flex-direction: column;
+    gap: 8px;
+    font-size: 1rem;
+  }
+}
+
+/* Reduz o padding do body e container em telas pequenas */
+@media (max-width: 900px) {
+  body {
+    padding: 2vw;
+  }
+  .container {
+    padding: 6px;
+    width: 100vw;
+    min-width: unset;
+    max-width: 100vw;
+  }
+  header {
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .scoreboard {
+    font-size: 13px;
+    gap: 6px;
+  }
+  .controls button {
+    padding: 7px 10px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+  .board {
+    gap: 2vw;
+    padding: 1vw;
+  }
+  .cell {
+    font-size: 7vw;
+    border-radius: 8px;
+  }
+}
+
+/* Para telas muito pequenas, ajuste ainda mais */
+@media (max-width: 600px) {
+  .container {
+    padding: 2px;
+  }
+  .board {
+    gap: 1vw;
+    padding: 0;
+  }
+  .cell {
+    font-size: 8vw;
+    min-width: 0;
+    border-radius: 6px;
+  }
+  .start-card {
+    width: 99vw;
+    padding: 4px;
+  }
+}
+
+/* Responsivo para telas pequenas */
+@media (max-width: 420px) {
+  .container {
+    width: 98vw;
+    padding: 2vw;
+  }
+  .board {
+    width: 96vw;
+    height: 96vw;
+    max-width: 96vw;
+    max-height: 96vw;
+    gap: 2vw;
+  }
+  .cell {
+    font-size: 8vw;
+    border-radius: 6px;
+  }
+}
+</style>
+</head>
+<body class="dark">
+
+<!-- TELA INICIAL -->
+<div id="start-screen" class="overlay">
+  <div class="start-card">
+    <h1>Jogo da Velha Avançado</h1>
+    <label for="mode-select">Modo de Jogo:</label>
+    <select id="mode-select">
+      <option value="pvp">Player vs Player</option>
+      <option value="pvc">Player vs I.A</option>
+    </select>
+    <button id="start-btn">Start</button>
+  </div>
+</div>
+
+<!-- CONTAINER PRINCIPAL -->
+<div class="container" role="main">
+  <div class="top-actions">
+    <button id="toggle-theme-btn" title="Alternar tema">🌙</button>
+    <button id="toggle-sound-btn" title="Som">🔊</button>
+  </div>
+  <header>
+    <div class="scoreboard" aria-live="polite">
+      <span>Jogador X: <span id="score-x">0</span> <span id="lives-x" class="hearts"></span></span>
+      <span>Jogador O: <span id="score-o">0</span> <span id="lives-o" class="hearts"></span></span>
+    </div>
+    <div class="controls">
+      <button id="new-round-btn">Próxima Rodada</button>
+      <button id="reset-btn">Resetar Tudo</button>
+    </div>
+  </header>
+  <main>
+    <div id="board" class="board" aria-label="Tabuleiro do jogo"></div>
+  </main>
+  <footer>
+    <div id="message">Clique em Start para começar o jogo.</div>
+  </footer>
+</div>
+
+<!-- SONS -->
+<audio id="click-sound" src="click.mp3" preload="auto"></audio>
+<audio id="win-sound" src="win.mp3" preload="auto"></audio>
+
+<script>
+// ===== VARIÁVEIS =====
+let board=["","","","","","","","",""]; // Estado do tabuleiro
+let currentPlayer='X';                  // Jogador atual
+let scores={X:0,O:0};                   // Pontuação
+let lives={X:3,O:3};                    // Vidas restantes
+let isRoundActive=false;                // Round ativo ou não
+let gameMode='pvp';                     // Modo de jogo (pvp ou pvc)
+let soundMuted=false;
+
+// ===== ELEMENTOS =====
+const startScreen=document.getElementById('start-screen');
+const startBtn=document.getElementById('start-btn');
+const modeSelect=document.getElementById('mode-select');
+const boardEl=document.getElementById('board');
+const messageEl=document.getElementById('message');
+const scoreXEl=document.getElementById('score-x');
+const scoreOEl=document.getElementById('score-o');
+const livesXEl=document.getElementById('lives-x');
+const livesOEl=document.getElementById('lives-o');
+const newRoundBtn=document.getElementById('new-round-btn');
+const resetBtn=document.getElementById('reset-btn');
+const toggleThemeBtn=document.getElementById('toggle-theme-btn');
+const toggleSoundBtn=document.getElementById('toggle-sound-btn');
+const clickSound=document.getElementById('click-sound');
+const winSound=document.getElementById('win-sound');
+
+// Combinações vencedoras
+const winCombos=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+// ===== FUNÇÃO DE SOM =====
+function playSound(audio){
+  if(!soundMuted){
+    audio.currentTime=0;
+    audio.play().catch(err=>console.log('Erro ao tocar som:', err));
+  }
+}
+
+// ===== INICIAR JOGO =====
+function startGame(){
+  lives={X:3,O:3};
+  scores={X:0,O:0};
+  currentPlayer='X';
+  gameMode=modeSelect.value;
+  resetBoard();
+  updateScoreboard();
+  startScreen.style.display='none';
+  setMessage(`Vez de ${currentPlayer} — Boa sorte!`);
+}
+
+// ===== RENDERIZA CORAÇÕES =====
+function renderHearts(){
+  const createHearts=(num)=>'<span class="heart">❤️</span>'.repeat(num);
+  livesXEl.innerHTML=createHearts(lives.X);
+  livesOEl.innerHTML=createHearts(lives.O);
+}
+
+// ===== RESETAR TABULEIRO =====
+function resetBoard(){
+  board=["","","","","","","","",""];
+  isRoundActive=true;
+  boardEl.innerHTML='';
+  for(let i=0;i<9;i++){
+    const cell=document.createElement('div');
+    cell.classList.add('cell');
+    cell.setAttribute('data-index',i);
+    cell.setAttribute('role','button');
+    cell.tabIndex=0;
+    cell.addEventListener('click',onCellClick);
+    cell.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onCellClick.call(this,e); }
+    });
+    boardEl.appendChild(cell);
+  }
+  if(gameMode==='pvc' && currentPlayer==='O') setTimeout(aiMove,300);
+}
+
+// ===== CLIQUE NAS CELULAS =====
+function onCellClick(e){
+  if(!isRoundActive) return;
+  const index=parseInt(this.getAttribute('data-index'),10);
+  if(board[index]!=='') return;
+  if(gameMode==='pvc' && currentPlayer==='O') return; // Bloqueia clique na vez da IA
+
+  board[index]=currentPlayer;
+  playSound(clickSound);
+  renderBoard();
+
+  if(checkWin(currentPlayer)){ handleWin(currentPlayer); return;}
+  if(board.every(c=>c!=='')){ handleTie(); return;}
+  currentPlayer=currentPlayer==='X'?'O':'X';
+  setMessage(`Vez de ${currentPlayer}`);
+  if(gameMode==='pvc' && currentPlayer==='O') setTimeout(aiMove,300);
+}
+
+// ===== RENDERIZA TABULEIRO =====
+function renderBoard(highlight=[]){
+  const cells=boardEl.querySelectorAll('.cell');
+  cells.forEach((cell,idx)=>{
+    cell.classList.remove('x','o','highlight');
+    const val=board[idx];
+    if(val==='X') cell.classList.add('x');
+    else if(val==='O') cell.classList.add('o');
+    if(highlight.includes(idx)) cell.classList.add('highlight');
+    cell.textContent=val;
+  });
+}
+
+// ===== CHECA VITÓRIA =====
+function checkWin(player){
+  return winCombos.some(combo=>combo.every(idx=>board[idx]===player));
+}
+
+// ===== MANIPULA VITÓRIA =====
+function handleWin(player){
+  isRoundActive=false;
+  scores[player]+=1;
+  const loser=player==='X'?'O':'X';
+  lives[loser]=Math.max(0,lives[loser]-1);
+  updateScoreboard();
+  renderBoard(winCombos.find(combo=>combo.every(idx=>board[idx]===player))||[]);
+  setMessage(`Jogador ${player} venceu!`);
+  playSound(winSound);
+  if(lives[loser]===0) setTimeout(()=>gameOver(player),700);
+}
+
+// ===== EMPATE =====
+function handleTie(){ isRoundActive=false; setMessage('Empate! Ninguém perde vida.'); }
+
+// ===== ATUALIZA PLACAR =====
+function updateScoreboard(){ scoreXEl.textContent=scores.X; scoreOEl.textContent=scores.O; renderHearts(); }
+
+// ===== MENSAGEM =====
+function setMessage(text){ messageEl.innerHTML=text; }
+
+// ===== PRÓXIMA RODADA =====
+function nextRound(){
+  if(lives.X>0 && lives.O>0){
+    currentPlayer='X'; resetBoard(); setMessage(`Nova rodada — Vez de ${currentPlayer}`);
+  } else{
+    const winner=lives.X>0?'X':(lives.O>0?'O':null);
+    if(winner) gameOver(winner);
+    else setMessage('Ambos sem vidas — Reinicie o jogo');
+  }
+}
+
+// ===== RESETAR TUDO =====
+function resetAll(){
+  startScreen.style.display='flex';
+  scores={X:0,O:0};
+  lives={X:3,O:3};
+  updateScoreboard();
+  resetBoard();
+  setMessage('Clique em Start para começar o jogo.');
+}
+
+// ===== GAME OVER =====
+function gameOver(winner){
+  startScreen.style.display='flex';
+  const card=startScreen.querySelector('.start-card');
+  card.innerHTML=`<h1>Fim de Jogo</h1><p class="big-message">Jogador ${winner} venceu a partida final!</p><p>Placar final — X: ${scores.X} | O: ${scores.O}</p><div style="margin-top:12px;"><button id="restart-all">Reiniciar Tudo</button></div>`;
+  document.getElementById('restart-all').addEventListener('click',()=>{location.reload();});
+}
+
+// ===== IA INTELIGENTE =====
+function aiMove(){
+  if(!isRoundActive) return;
+
+  const emptyIndices = board.map((v,i)=>v===''?i:null).filter(v=>v!==null);
+
+  // 1️⃣ Tentar ganhar
+  for(let combo of winCombos){
+    const [a,b,c] = combo;
+    const values = [board[a], board[b], board[c]];
+    if(values.filter(v=>'O'===v).length===2 && values.includes('')){
+      const idx = combo[values.indexOf('')];
+      board[idx]='O';
+      playSound(clickSound);
+      renderBoard();
+      if(checkWin('O')) handleWin('O');
+      else currentPlayer='X'; setMessage(`Vez de ${currentPlayer}`);
+      return;
+    }
+  }
+
+  // 2️⃣ Bloquear jogador X
+  for(let combo of winCombos){
+    const [a,b,c] = combo;
+    const values = [board[a], board[b], board[c]];
+    if(values.filter(v=>'X'===v).length===2 && values.includes('')){
+      const idx = combo[values.indexOf('')];
+      board[idx]='O';
+      playSound(clickSound);
+      renderBoard();
+      if(checkWin('O')) handleWin('O');
+      else currentPlayer='X'; setMessage(`Vez de ${currentPlayer}`);
+      return;
+    }
+  }
+
+  // 3️⃣ Estratégico: centro > cantos > lados
+  const center = [4];
+  const corners = [0,2,6,8];
+  const sides = [1,3,5,7];
+  let move = null;
+  for(let arr of [center,corners,sides]){
+    const possible = arr.filter(i=>board[i]==='');
+    if(possible.length>0){
+      move = possible[Math.floor(Math.random()*possible.length)];
+      break;
+    }
+  }
+  if(move!==null){
+    board[move]='O';
+    playSound(clickSound);
+    renderBoard();
+    if(checkWin('O')) handleWin('O');
+    else if(board.every(c=>c!=='')) handleTie();
+    else currentPlayer='X'; setMessage(`Vez de ${currentPlayer}`);
+  }
+}
+
+// ===== EVENTOS =====
+startBtn.addEventListener('click', startGame);
+newRoundBtn.addEventListener('click', nextRound);
+resetBtn.addEventListener('click', resetAll);
+
+function updateThemeIcon() {
+  toggleThemeBtn.textContent = document.body.classList.contains('dark') ? '🌙' : '☀️';
+}
+function updateSoundIcon() {
+  toggleSoundBtn.textContent = soundMuted ? '🔇' : '🔊';
+}
+
+toggleThemeBtn.addEventListener('click', ()=>{
+  document.body.classList.toggle('dark');
+  document.body.classList.toggle('light');
+  updateThemeIcon();
+});
+toggleSoundBtn.addEventListener('click', ()=>{
+  soundMuted=!soundMuted;
+  updateSoundIcon();
+});
+
+updateThemeIcon();
+updateSoundIcon();
+
+// ===== INICIALIZA =====
+resetBoard();
+setMessage('Clique em Start para começar o jogo.');
+</script>
+</body>
+</html>
